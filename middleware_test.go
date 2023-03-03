@@ -59,15 +59,15 @@ func TestOperationMiddleware(t *testing.T) {
 
 func TestRaceMiddlewa(t *testing.T) {
 	app := middleware.NewDispatcher[TestContext, error]()
-	app.Use(CountMiddleware())
-	app.Use(OpTest, CountMiddleware())
-	app.Use(OpTest2, CountMiddleware())
-	app.Use(OpTest|OpTest2, CountMiddleware())
 
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		app.Use(CountMiddleware())
+		app.Use(OpTest, CountMiddleware())
+		app.Use(OpTest2, CountMiddleware())
+		app.Use(OpTest|OpTest2, CountMiddleware())
 		c := &TestContext{}
 		if err := app.Dispatch(c, middleware.WithOperation[TestContext, error](middleware.OpGlobal|OpTest)); err != nil {
 			panic(err)
@@ -77,6 +77,10 @@ func TestRaceMiddlewa(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		app.Use(CountMiddleware())
+		app.Use(OpTest, CountMiddleware())
+		app.Use(OpTest2, CountMiddleware())
+		app.Use(OpTest|OpTest2, CountMiddleware())
 		c := &TestContext{}
 		if err := app.Dispatch(c, middleware.WithOperation[TestContext, error](middleware.OpGlobal|OpTest)); err != nil {
 			panic(err)

@@ -30,6 +30,8 @@ func NewDispatcher[T any, E any](middlewares ...Middleware[T, E]) *Dispatcher[T,
 }
 
 func (d *Dispatcher[T, E]) Use(args ...any) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 	var operation Bitmask
 	operation = OpGlobal
 	for i := 0; i < len(args); i++ {
