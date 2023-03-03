@@ -71,6 +71,8 @@ func (d *Dispatcher[T, E]) Dispatch(ctx *T, opts ...DispatchOption[T, E]) E {
 	}
 
 	var middlewares []Middleware[T, E]
+	d.mutex.Lock()
+
 	if d.dispatchOperation == OpGlobal {
 		middlewares = d.middlewares[d.dispatchOperation]
 	} else {
@@ -81,7 +83,7 @@ func (d *Dispatcher[T, E]) Dispatch(ctx *T, opts ...DispatchOption[T, E]) E {
 			}
 		}
 	}
-
+	d.mutex.Unlock()
 	return invokeMiddlewares(ctx, middlewares)
 }
 
