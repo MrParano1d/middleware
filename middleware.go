@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"math/bits"
+	"sync"
 )
 
 type Next[E any] func() E
@@ -10,6 +11,7 @@ type Next[E any] func() E
 type Middleware[T any, E any] func(ctx *T, next Next[E]) E
 
 type Dispatcher[T any, E any] struct {
+	mutex             *sync.Mutex
 	middlewares       map[Bitmask][]Middleware[T, E]
 	dispatchOperation Bitmask
 }
@@ -21,6 +23,7 @@ const (
 
 func NewDispatcher[T any, E any](middlewares ...Middleware[T, E]) *Dispatcher[T, E] {
 	return &Dispatcher[T, E]{
+		mutex:             &sync.Mutex{},
 		middlewares:       map[Bitmask][]Middleware[T, E]{OpGlobal: middlewares},
 		dispatchOperation: OpGlobal,
 	}
@@ -56,7 +59,9 @@ func (d *Dispatcher[T, E]) Use(args ...any) {
 
 func (d *Dispatcher[T, E]) Dispatch(ctx *T, opts ...DispatchOption[T, E]) E {
 	defer func() {
+		d.mutex.Lock()
 		d.dispatchOperation = OpGlobal
+		d.mutex.Unlock()
 	}()
 
 	for _, opt := range opts {
@@ -75,7 +80,7 @@ func (d *Dispatcher[T, E]) Dispatch(ctx *T, opts ...DispatchOption[T, E]) E {
 		}
 	}
 
-	return invokeMiddlewares[T, E](ctx, middlewares)
+	return invokeMiddlewares(ctx, middlewares)
 }
 
 func invokeMiddlewares[T any, E interface{}](ctx *T, middlewares []Middleware[T, E]) E {
